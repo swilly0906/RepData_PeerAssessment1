@@ -4,22 +4,121 @@ output:
   html_document:
     keep_md: true
 ---
+```{r,results='hide'}
+library(knitr)
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
 
+```{r setoption,echo=TRUE}
+opts_chunk$set(echo=TRUE)
+```
 
 ## Loading and preprocessing the data
-
-
+```{r}
+activity <- read_csv("activity.zip",col_types = "iDi",progress = TRUE)
+```
+I need to load and prepare this dataset into the R.Therefore, I use read_csv to load this
+data.<br>
 
 ## What is mean total number of steps taken per day?
+According to the rule of Q1,so the Q1 and Q2 should ignore missing values.<br>
+(this question is first question.)<br>
+```{r}
+activity %>% 
+  filter(!is.na(steps)) %>%
+  group_by(date) %>%
+  summarise(total_step = sum(steps))%>%
+  ggplot(aes(date))+
+  geom_histogram(binwidth = 0.5)+
+  stat_identity(aes(y = total_step),position = "identity",geom = "bar")
+```
+<br>
+This histogram show that total number of steps taken each day.<br>
 
-
+```{r}
+activity %>% 
+  filter(!is.na(steps)) %>%
+  group_by(date) %>%
+  summarise(mean_step = mean(steps),median_step = median(steps)) %>%
+  as.data.frame()
+```
+<br>
+This output is shocking for me because all median of the total number of steps taken per day is zero. many steps equal zero per day.
 
 ## What is the average daily activity pattern?
+```{r}
+activity %>% 
+  filter(!is.na(steps)) %>%
+  group_by(date) %>%
+  summarise(mean_step = mean(steps)) %>%
+  ggplot(aes(x = date,y = mean_step))+
+  geom_line()+
+  labs(title = "Time series plot of the average number of steps taken per day",
+       x = "Date",
+       y = "average of step")
+```
+<br>
+This time series plot show the average number of steps taken per day.<br>
 
+```{r}
+activity %>% 
+  filter(!is.na(steps)) %>%
+  group_by(interval) %>%
+  summarise(avg_step = mean(steps)) %>%
+  ggplot(aes(x = interval,y = avg_step))+
+  geom_line()
+```
+<br>
+Well....Tell the truth, because English is not my native language, I am so confusing for this question.<br>
+This qusetion say:Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?<br>
+Sorry, I don't know meaning of this question. I think I calculate the mean of steps?if yes,
+x-axis is interval and y-axis is mean of steps.but What is the "contains the maximum number of steps"??<br>
+In conclusion, I actually am so confusing.
 
 
 ## Imputing missing values
-
+```{r}
+activity %>% 
+  group_by(date) %>%
+  summarise(mean_step = mean(steps),median_step = median(steps)) %>%
+  as.data.frame()
+```
+<br>
+In this Q, I don't ignore missing values.
+When adding the missing values, I find add the 8 days.
+<br>
+```{r}
+activity %>% 
+  group_by(date) %>%
+  summarise(total_step = sum(steps))%>%
+  ggplot(aes(date))+
+  geom_histogram(binwidth = 0.5)+
+  stat_identity(aes(y = total_step),position = "identity",geom = "bar")
+```
+<br>I think two output(ignore and doesn't ignore missing values) is a little different.
+Because days which doesn't exist NA is not affect by adding the missing values,I think
+imputing missing data on the estimates of the total daily number of steps is a little
+impact.<br>
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+activity$week <- weekdays(activity$date)
+for(i in seq_along(activity$week)){
+  if(activity$week[i]=="星期六" | activity$week[i]=="星期日"){
+    activity$week[i]<-"weekend"
+  }else{
+    activity$week[i]<-"weekday"
+  }
+}
+activity %>%
+  filter(!is.na(steps)) %>%
+  group_by(week,interval) %>%
+  summarise(mean_step = mean(steps)) %>%
+  ggplot(aes(x = interval,y = mean_step))+
+  geom_line()+
+  facet_grid(.~week)
+```
+<br>In 500-1,000 interval,I found mean of step of weekday is more than weekend.Moreover,in 1,000-2,000 interval,I found mean of step of weekdend is more than weekday.
